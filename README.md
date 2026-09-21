@@ -8,7 +8,7 @@
 [![Firebase Firestore](https://img.shields.io/badge/Database-Cloud_Firestore-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://firebase.google.com/)
 [![Next.js 14](https://img.shields.io/badge/Next.js-14_App_Router-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-Design_Tokens-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fwilliamdevide%2Fantigravity.comixFlix&project-name=comixflix&repository-name=antigravity.comixFlix)
 
 <br/>
 
@@ -90,6 +90,13 @@ Para verificar a integridade e contagem em tempo real no Cloud Firestore:
 ```bash
 node scripts/verify_firestore_count.js
 ```
+
+### 🌐 Deploy na Vercel (1 Clique ou GitHub Integration)
+O projeto está 100% pronto para deploy na Vercel com suporte ao Next.js 14 App Router e rotas SSE:
+1. Clique no badge **Deploy with Vercel** no topo do README ou acesse [vercel.com/new](https://vercel.com/new).
+2. Conecte ao repositório GitHub `williamdevide/antigravity.comixFlix`.
+3. Em **Environment Variables**, adicione as variáveis do Firebase (`NEXT_PUBLIC_FIREBASE_*`).
+4. Clique em **Deploy** — sua aplicação estará online com HTTPS automático e CDN global!
 
 ---
 
