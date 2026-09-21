@@ -3,7 +3,12 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from "react";
 import { Comic, UserComic, CollectionStats } from "../types/comic";
 import { INITIAL_COMICS } from "../data/comics-seed";
-import { saveUserCollectionToFirestore, getUserCollectionFromFirestore } from "../firebase/firestore";
+import {
+  saveUserCollectionToFirestore,
+  getUserCollectionFromFirestore,
+  getComicsFromFirestore,
+} from "../firebase/firestore";
+import { isFirebaseConfigured } from "../firebase/config";
 
 interface ToastMessage {
   id: string;
@@ -47,8 +52,47 @@ export function CollectionProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Carrega catálogo atualizado do backend ou cache se disponível
+  // Carrega catálogo atualizado: tenta JSON estático do GitHub Pages / produção, Firestore direto ou API
   const reloadCatalog = async () => {
+    // 1. Tenta carregar o catálogo estático completo (+10.400 edições oficiais)
+    try {
+      const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+      const candidateUrls = [
+        `${basePath}/data/scraped-catalog.json`,
+        "/antigravity.comixFlix/data/scraped-catalog.json",
+        "/data/scraped-catalog.json",
+      ];
+
+      for (const url of candidateUrls) {
+        try {
+          const res = await fetch(url);
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data) && data.length > 50) {
+              setComics(data);
+              return;
+            }
+          }
+        } catch {}
+      }
+    } catch (e) {
+      console.warn("[ComixFlix] Catálogo estático inacessível, tentando Firestore:", e);
+    }
+
+    // 2. Se falhar ou estiver no navegador com Firebase configurado, consulta o Cloud Firestore
+    try {
+      if (isFirebaseConfigured) {
+        const remoteComics = await getComicsFromFirestore();
+        if (remoteComics && remoteComics.length > 50) {
+          setComics(remoteComics);
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn("[ComixFlix] Falha ao consultar Firestore no cliente:", e);
+    }
+
+    // 3. Fallback para rota dinâmica de API (/api/comics) no localhost ou Vercel
     try {
       const res = await fetch("/api/comics");
       if (res.ok) {

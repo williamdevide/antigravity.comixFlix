@@ -21,12 +21,28 @@ try {
     apiMoved = true;
   }
 
+  // Lê variáveis do .env para passar ao Next.js
+  const envVars = {};
+  const envPath = path.resolve('.env');
+  if (fs.existsSync(envPath)) {
+    const lines = fs.readFileSync(envPath, 'utf8').split('\n');
+    for (const line of lines) {
+      const match = line.match(/^\s*([A-Za-z0-9_]+)\s*=\s*(.*)?\s*$/);
+      if (match) {
+        const key = match[1];
+        const val = (match[2] || '').trim().replace(/^["']|["']$/g, '');
+        envVars[key] = val;
+      }
+    }
+  }
+
   // 3. Executa next build em modo estático
   console.log('3. Executando next build com output: export...');
   execSync('npx next build', {
     stdio: 'inherit',
     env: {
       ...process.env,
+      ...envVars,
       GITHUB_PAGES: 'true',
       NEXT_PUBLIC_BASE_PATH: '/antigravity.comixFlix',
     },
