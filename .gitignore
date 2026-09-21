@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Environment and Secrets
+.env
+.env*.local
+.env.development.local
+.env.test.local
+.env.production.local
+mcp_config.json
+scripts/git_push.js
+
+# Next.js build output
+.next/
+out/
+build/
+dist/
+
+# TypeScript
+tsconfig.tsbuildinfo
+next-env.d.ts
+
+# Temporary scraper dumps
+scripts/*.html
+scripts/*.webp
+scripts/*.xml
+scripts/panini_cover_cache.json
+
+# System and logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+*.log

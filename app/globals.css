@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Variáveis de Tema Padrão: Modo Claro (Light Mode) */
+  :root {
+    --bg-canvas: #F8F9FA;
+    --bg-surface: #FFFFFF;
+    --bg-elevated: #F1F3F5;
+    --text-primary: #1A1A1A;
+    --text-secondary: #5A626A;
+    --text-tertiary: #8C96A0;
+    --border-default: #E2E8F0;
+    --border-subtle: #EDF2F7;
+    --brand-primary: #E50914;
+    color-scheme: light;
+  }
+
+  /* Variáveis de Tema Ativo: Modo Escuro (Dark Mode) */
+  html.dark {
+    --bg-canvas: #141414;
+    --bg-surface: #1F1F1F;
+    --bg-elevated: #2B2B2B;
+    --text-primary: #FFFFFF;
+    --text-secondary: #B3B3B3;
+    --text-tertiary: #8C8C8C;
+    --border-default: #404040;
+    --border-subtle: #2A2A2A;
+    --brand-primary: #E50914;
+    color-scheme: dark;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    background-color: var(--bg-canvas);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+    transition: background-color 0.25s ease, color 0.25s ease;
+  }
+}
+
+/* Utilitário para ocultar scrollbars nativas em carrosséis e fileiras */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Suporte para safe-area no mobile PWA */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 1rem);
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0rem);
+}

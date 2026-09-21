@@ -1,0 +1,10 @@
+const fs = require('fs');
+const file = process.argv[2] || 'scripts/sample_sandman.html';
+const html = fs.readFileSync(file, 'utf8');
+const og = html.match(/property="og:image"\s+content="([^"]+)"/i);
+const title = html.match(/<title>([^<]+)<\/title>/i);
+const price = html.match(/data-price-amount="([^"]+)"/i) || html.match(/class="price">R\$\s*([^<]+)<\/span>/i);
+console.log('File:', file);
+console.log('Title:', title ? title[1].trim() : 'none');
+console.log('OG Image:', og ? og[1] : 'none');
+console.log('Price:', price ? price[1] : 'none');

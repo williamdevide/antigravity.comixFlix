@@ -1,0 +1,34 @@
+{
+  "lastExecutedAt": "2026-09-21T00:26:02.538Z",
+  "totalComics": 10643,
+  "bySite": {
+    "panini": 9521,
+    "mythos": 803,
+    "pipoca_nanquim": 157,
+    "quadrinhos_cia": 162
+  },
+  "metricsBySite": {
+    "panini": {
+      "alreadyImported": 9521,
+      "foundOnSite": 9521,
+      "pendingImport": 0
+    },
+    "mythos": {
+      "alreadyImported": 803,
+      "foundOnSite": 803,
+      "pendingImport": 0
+    },
+    "pipoca_nanquim": {
+      "alreadyImported": 157,
+      "foundOnSite": 216,
+      "pendingImport": 59
+    },
+    "quadrinhos_cia": {
+      "alreadyImported": 162,
+      "foundOnSite": 162,
+      "pendingImport": 0
+    }
+  },
+  "scheduleTime": "03:00",
+  "intervalHours": 24
+}
