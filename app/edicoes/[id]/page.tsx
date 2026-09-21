@@ -68,9 +68,10 @@ export default function EdicaoDetalhePage() {
         {/* Capa 2:3 com Sombra e Borda */}
         <div className="w-56 sm:w-64 md:w-72 aspect-[2/3] shrink-0 mx-auto md:mx-0 rounded-xl overflow-hidden bg-bg-surface border border-border-default shadow-elevated">
           <img
-            src={comic.url_capa}
+            src={comic.imagem_base64 || comic.url_capa}
             alt={comic.titulo}
             className="w-full h-full object-cover"
+            decoding="async"
           />
         </div>
 

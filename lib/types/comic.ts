@@ -31,6 +31,7 @@ export interface Comic {
   preco_promocional: number | null;
   data_lancamento: string | null;
   url_capa: string;
+  imagem_base64?: string | null; // Capa física armazenada diretamente no Firestore em formato Data URI Base64
   url_backdrop?: string | null;
   personagem_principal: string | null;
   resumo_sinopse: string | null;

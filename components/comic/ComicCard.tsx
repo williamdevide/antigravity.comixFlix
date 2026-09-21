@@ -30,10 +30,11 @@ export const ComicCard: React.FC<ComicCardProps> = ({ comic, showActions = true 
       {/* 2:3 Cover Image Container */}
       <div className="relative w-full aspect-[2/3] rounded-lg overflow-hidden bg-bg-surface border border-border-default/50 shadow-card transition-all duration-300 group-hover:scale-[1.03] group-hover:shadow-elevated group-hover:border-border-default">
         <img
-          src={comic.url_capa}
+          src={comic.imagem_base64 || comic.url_capa}
           alt={`Capa de ${comic.titulo}`}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           loading="lazy"
+          decoding="async"
         />
 
         {/* Discount Badge */}

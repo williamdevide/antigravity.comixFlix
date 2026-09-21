@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from "react";
 import { Comic, UserComic, CollectionStats } from "../types/comic";
 import { INITIAL_COMICS } from "../data/comics-seed";
+import { saveUserCollectionToFirestore, getUserCollectionFromFirestore } from "../firebase/firestore";
 
 interface ToastMessage {
   id: string;
@@ -61,39 +62,55 @@ export function CollectionProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Carrega estado persistido do localStorage na montagem
+  // Carrega estado persistido do localStorage e Cloud Firestore na montagem
   useEffect(() => {
-    try {
-      // Limpa dados de teste mock da versão antiga se existirem
-      if (typeof window !== "undefined") {
-        localStorage.removeItem(OLD_STORAGE_KEY);
-      }
+    const loadSavedState = async () => {
+      try {
+        if (typeof window !== "undefined") {
+          localStorage.removeItem(OLD_STORAGE_KEY);
+        }
 
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        setUserComics(JSON.parse(stored));
-      } else {
-        // Inicializa com coleção 100% VAZIA por padrão (0 na estante, 0 na wishlist)
+        const stored = localStorage.getItem(STORAGE_KEY);
+        let loadedState: Record<string, UserComic> = {};
+        if (stored) {
+          loadedState = JSON.parse(stored);
+        }
+
+        // Se local estiver vazio, tenta carregar do Cloud Firestore
+        try {
+          const remoteState = await getUserCollectionFromFirestore("default_user");
+          if (remoteState && Object.keys(remoteState).length > 0 && Object.keys(loadedState).length === 0) {
+            loadedState = remoteState;
+          }
+        } catch {
+          // Fallback silencioso para offline
+        }
+
+        setUserComics(loadedState);
+      } catch (e) {
+        console.warn("Erro ao carregar dados de coleção:", e);
         setUserComics({});
+      } finally {
+        setIsLoaded(true);
       }
-    } catch (e) {
-      console.warn("Erro ao carregar dados do LocalStorage:", e);
-      setUserComics({});
-    } finally {
-      setIsLoaded(true);
-    }
 
-    // Carrega catálogo
-    reloadCatalog();
+      reloadCatalog();
+    };
+
+    loadSavedState();
   }, []);
 
-  // Salva no localStorage em toda alteração
+  // Salva no localStorage e sincroniza em tempo real com o Cloud Firestore
   useEffect(() => {
     if (isLoaded) {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(userComics));
+        // Gravação direta no Cloud Firestore
+        saveUserCollectionToFirestore("default_user", userComics).catch((err) => {
+          console.warn("[ComixFlix] Falha na persistência Firestore:", err);
+        });
       } catch (e) {
-        console.error("Erro ao persistir no LocalStorage:", e);
+        console.error("Erro ao persistir coleção:", e);
       }
     }
   }, [userComics, isLoaded]);

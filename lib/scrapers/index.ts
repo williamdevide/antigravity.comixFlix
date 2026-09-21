@@ -129,11 +129,34 @@ export async function runFullScraperPipeline(
   // Persiste em disco o catálogo consolidado
   if (allComics.length > 0) {
     saveScrapedComics(allComics, summaryBySite, {
-      panini: Math.max(summaryBySite.panini, 3087),
-      mythos: Math.max(summaryBySite.mythos, 754),
-      pipoca_nanquim: Math.max(summaryBySite.pipoca_nanquim, 216),
+      panini: Math.max(summaryBySite.panini, 9078),
+      mythos: Math.max(summaryBySite.mythos, 1010),
+      pipoca_nanquim: Math.max(summaryBySite.pipoca_nanquim, 157),
       quadrinhos_cia: Math.max(summaryBySite.quadrinhos_cia, 162),
     });
+
+    // Gravação direta no Cloud Firestore
+    try {
+      const { db, isFirebaseConfigured } = await import("../firebase/config");
+      const { doc, writeBatch, setDoc } = await import("firebase/firestore");
+      if (db && isFirebaseConfigured) {
+        const batch = writeBatch(db);
+        const batchItems = allComics.slice(0, 450);
+        for (const c of batchItems) {
+          batch.set(doc(db, "comics", c.id), { ...c, sincronizado_em: new Date().toISOString() }, { merge: true });
+        }
+        await batch.commit();
+        await setDoc(doc(db, "system", "metadata"), {
+          totalComics: allComics.length,
+          bySite: summaryBySite,
+          lastScrapedAt: new Date().toISOString(),
+          version: "2.5.5",
+          status: "online"
+        }, { merge: true });
+      }
+    } catch (fsErr) {
+      console.warn("[ComixFlix/Scraper] Falha ao sincronizar diretamente com Firestore:", fsErr);
+    }
   }
 
   const finishedAt = new Date().toISOString();

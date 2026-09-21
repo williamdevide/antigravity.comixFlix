@@ -96,9 +96,10 @@ export const ComicDetailModal: React.FC = () => {
           {/* Capa 2:3 */}
           <div className="w-36 sm:w-44 aspect-[2/3] shrink-0 mx-auto sm:mx-0 rounded-lg overflow-hidden bg-bg-elevated border border-border-default shadow-elevated">
             <img
-              src={activeModalComic.url_capa}
+              src={activeModalComic.imagem_base64 || activeModalComic.url_capa}
               alt={activeModalComic.titulo}
               className="w-full h-full object-cover"
+              decoding="async"
             />
           </div>
 
