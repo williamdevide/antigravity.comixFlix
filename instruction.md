@@ -91,3 +91,24 @@ O projeto opera com **Fallback Seguro e Resiliente** para modo local, permitindo
 - `/perfil`: Perfil do colecionador com Nível 5, anel gradiente, insígnias de conquistas, patrimônio com toggle privativo de olho, ritmo de leitura e modal de compartilhamento social (Stories e Banner).
 - `/series/[slug]`: Visualização de série e detecção de lacunas com checklist interativo.
 - `/edicoes/[id]`: Página de detalhes de cada quadrinho com capas oficiais em alta definição e links diretos para as lojas.
+
+---
+
+## 🌐 5. Deploy em Produção (GitHub Pages & Vercel)
+
+### Deploy no GitHub Pages (Ativo e no Ar):
+O projeto está hospedado e funcionando publicamente em:
+👉 **`https://williamdevide.github.io/antigravity.comixFlix/`**
+
+Para compilar o catálogo estático e republicar no GitHub Pages via terminal:
+```bash
+npm run deploy:gh-pages
+```
+Ou deixe o CI/CD do GitHub Actions atualizar automaticamente via push na branch `main`.
+
+### Deploy na Vercel (Preparado com vercel.json):
+1. Acesse [vercel.com/new](https://vercel.com/new) e conecte o repositório:
+   `https://github.com/williamdevide/antigravity.comixFlix`
+2. Adicione as variáveis de ambiente do Firebase (`NEXT_PUBLIC_FIREBASE_*`) se desejar persistência remota instantânea para múltiplos usuários.
+3. Clique em **Deploy** — a Vercel utilizará o arquivo `vercel.json` e configurará automaticamente a CDN global com Serverless Functions.
+
