@@ -11,6 +11,7 @@ node_modules/
 .env.production.local
 mcp_config.json
 scripts/git_push.js
+scripts/deploy_gh_pages.js
 
 # Next.js build output
 .next/

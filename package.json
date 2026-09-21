@@ -8,7 +8,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:gh-pages": "node scripts/build_gh_pages.js",
+    "deploy:gh-pages": "node scripts/deploy_gh_pages.js"
   },
   "dependencies": {
     "clsx": "^2.1.1",
