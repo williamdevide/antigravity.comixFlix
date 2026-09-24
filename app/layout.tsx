@@ -1,12 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
-import { Suspense } from "react";
 import "./globals.css";
+import { AuthProvider } from "@/lib/context/auth-context";
 import { CollectionProvider } from "@/lib/context/collection-context";
-import { Header } from "@/components/layout/Header";
-import { BottomNav } from "@/components/layout/BottomNav";
-import { Footer } from "@/components/layout/Footer";
+import { AppLayoutShell } from "@/components/layout/AppLayoutShell";
 import { ComicDetailModal } from "@/components/comic/ComicDetailModal";
+import { AuthModal } from "@/components/auth/AuthModal";
 import { ToastContainer } from "@/components/ui/Toast";
 
 const inter = Inter({
@@ -31,7 +30,14 @@ export const metadata: Metadata = {
   ],
   manifest: "/manifest.json",
   icons: {
-    icon: "/favicon.ico",
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
   },
 };
 
@@ -51,6 +57,10 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className={`dark ${inter.variable}`} suppressHydrationWarning>
       <head>
+        <link
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"
+          rel="stylesheet"
+        />
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -70,16 +80,14 @@ export default function RootLayout({
         />
       </head>
       <body className="font-sans antialiased bg-bg-canvas text-text-primary min-h-screen flex flex-col">
-        <CollectionProvider>
-          <Header />
-          <main className="flex-1 w-full pb-20 md:pb-0">{children}</main>
-          <ComicDetailModal />
-          <ToastContainer />
-          <Footer />
-          <Suspense fallback={null}>
-            <BottomNav />
-          </Suspense>
-        </CollectionProvider>
+        <AuthProvider>
+          <CollectionProvider>
+            <AppLayoutShell>{children}</AppLayoutShell>
+            <ComicDetailModal />
+            <AuthModal />
+            <ToastContainer />
+          </CollectionProvider>
+        </AuthProvider>
       </body>
     </html>
   );

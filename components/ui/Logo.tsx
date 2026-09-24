@@ -2,93 +2,69 @@ import React from "react";
 
 interface LogoProps {
   className?: string;
-  compact?: boolean;
+  size?: "xs" | "sm" | "md" | "lg" | "xl" | "hero";
+  showText?: boolean;
+  glow?: boolean;
 }
 
-export const Logo: React.FC<LogoProps> = ({ className = "h-8 w-auto", compact = false }) => {
-  if (compact) {
-    return (
-      <svg
-        viewBox="0 0 45 45"
-        className={className}
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        aria-label="ComixFlix"
-      >
-        <defs>
-          <linearGradient id="cf-grad-compact" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#E50914" />
-            <stop offset="100%" stopColor="#B20710" />
-          </linearGradient>
-        </defs>
-        <path d="M6 8L36 2L42 38L12 44Z" fill="url(#cf-grad-compact)" />
-        <path d="M16 14L38 10L42 34L20 38Z" fill="#FFFFFF" fillOpacity="0.25" />
-        <text
-          x="19"
-          y="31"
-          fill="#FFFFFF"
-          fontFamily="Inter, sans-serif"
-          fontWeight="900"
-          fontSize="22"
-          fontStyle="italic"
-        >
-          C
-        </text>
-      </svg>
-    );
-  }
+export const Logo: React.FC<LogoProps> = ({
+  className = "",
+  size = "md",
+  showText = true,
+  glow = false,
+}) => {
+  // Configurações de dimensão de acordo com o tamanho
+  const sizeMap = {
+    xs: { imageSize: 22, fontSize: "text-sm", spacing: "gap-1.5" },
+    sm: { imageSize: 28, fontSize: "text-base", spacing: "gap-2" },
+    md: { imageSize: 36, fontSize: "text-xl", spacing: "gap-2.5" },
+    lg: { imageSize: 48, fontSize: "text-2xl", spacing: "gap-3" },
+    xl: { imageSize: 64, fontSize: "text-3xl", spacing: "gap-3.5" },
+    hero: { imageSize: 120, fontSize: "text-4xl sm:text-5xl", spacing: "gap-4 sm:gap-5" },
+  };
+
+  const currentSize = sizeMap[size];
 
   return (
-    <svg
-      viewBox="0 0 240 50"
-      className={className}
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-label="ComixFlix Logo"
+    <div
+      className={`inline-flex items-center select-none ${currentSize.spacing} ${className}`}
     >
-      <defs>
-        <linearGradient id="cf-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#E50914" />
-          <stop offset="100%" stopColor="#B20710" />
-        </linearGradient>
-      </defs>
-      {/* Comic panel / dynamic polygon icon */}
-      <path d="M6 10L24 6L28 38L10 42Z" fill="url(#cf-grad)" />
-      <path d="M14 16L32 12L36 34L18 38Z" fill="#FFFFFF" fillOpacity="0.25" />
-      <text
-        x="17"
-        y="29"
-        fill="#FFFFFF"
-        fontFamily="Inter, sans-serif"
-        fontWeight="900"
-        fontSize="18"
-        fontStyle="italic"
+      {/* Imagem Oficial do Logo (logo.jpg) com acabamento premium e glow neon */}
+      <div
+        className={`relative shrink-0 flex items-center justify-center rounded-xl overflow-hidden transition-transform duration-300 border border-[#E50914]/40 shadow-md bg-black ${
+          glow
+            ? "drop-shadow-[0_0_25px_rgba(229,9,20,0.85)] shadow-[0_0_20px_rgba(229,9,20,0.5)] border-[#E50914]"
+            : ""
+        }`}
+        style={{
+          width: currentSize.imageSize,
+          height: currentSize.imageSize,
+        }}
       >
-        C
-      </text>
-      {/* Wordmark COMIXFLIX */}
-      <text
-        x="44"
-        y="34"
-        fill="#E50914"
-        fontFamily="Inter, sans-serif"
-        fontWeight="900"
-        fontSize="25"
-        letterSpacing="-0.5"
-      >
-        COMIX
-      </text>
-      <text
-        x="136"
-        y="34"
-        className="fill-white dark:fill-white text-primary"
-        fontFamily="Inter, sans-serif"
-        fontWeight="800"
-        fontSize="25"
-        letterSpacing="-0.5"
-      >
-        FLIX
-      </text>
-    </svg>
+        <img
+          src="/branding/logo.jpg"
+          alt="ComixFlix Logo"
+          className="w-full h-full object-cover object-center scale-105"
+        />
+        {/* Glow neon sutil de sobreposição */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-white/10 pointer-events-none" />
+      </div>
+
+      {/* Tipografia Oficial COMIXFLIX */}
+      {showText && (
+        <div className="flex items-center tracking-wider leading-none">
+          <span
+            className={`font-black text-[#E50914] ${currentSize.fontSize} drop-shadow-[0_2px_12px_rgba(229,9,20,0.6)]`}
+          >
+            COMIX
+          </span>
+          <span
+            className={`font-black text-white ${currentSize.fontSize} drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] ml-0.5`}
+          >
+            FLIX
+          </span>
+        </div>
+      )}
+    </div>
   );
 };

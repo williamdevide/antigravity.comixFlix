@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from "react";
 import { Comic, UserComic, CollectionStats } from "../types/comic";
+import { CloudSyncStatus } from "../types/user";
 import { INITIAL_COMICS } from "../data/comics-seed";
 import {
   saveUserCollectionToFirestore,
@@ -9,6 +10,7 @@ import {
   getComicsFromFirestore,
 } from "../firebase/firestore";
 import { isFirebaseConfigured } from "../firebase/config";
+import { useAuth } from "./auth-context";
 
 interface ToastMessage {
   id: string;
@@ -23,6 +25,7 @@ interface CollectionContextType {
   activeModalComic: Comic | null;
   toasts: ToastMessage[];
   stats: CollectionStats;
+  syncStatus: CloudSyncStatus;
   getComicStatus: (comicId: string) => {
     isQuero: boolean;
     isTenho: boolean;
@@ -37,24 +40,32 @@ interface CollectionContextType {
   removeToast: (id: string) => void;
   clearCollection: () => void;
   reloadCatalog: () => Promise<void>;
+  forceCloudSync: () => Promise<void>;
 }
 
 const CollectionContext = createContext<CollectionContextType | undefined>(undefined);
 
-// Versão 2: Coleção pessoal estritamente limpa (sem dados mock)
-const STORAGE_KEY = "comixflix_user_comics_v2";
-const OLD_STORAGE_KEY = "comixflix_user_comics_v1";
+const GUEST_STORAGE_KEY = "comixflix_user_comics_guest";
+const BASE_STORAGE_KEY = "comixflix_user_comics_";
 
 export function CollectionProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [comics, setComics] = useState<Comic[]>(INITIAL_COMICS);
   const [userComics, setUserComics] = useState<Record<string, UserComic>>({});
   const [activeModalComic, setActiveModalComic] = useState<Comic | null>(null);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<CloudSyncStatus>(
+    isFirebaseConfigured ? "synced" : "offline"
+  );
 
-  // Carrega catálogo atualizado: tenta JSON estático do GitHub Pages / produção, Firestore direto ou API
+  // Determina a chave de armazenamento de acordo com o usuário logado
+  const currentStorageKey = useMemo(() => {
+    return user ? `${BASE_STORAGE_KEY}${user.uid}` : GUEST_STORAGE_KEY;
+  }, [user]);
+
+  // Carrega catálogo atualizado
   const reloadCatalog = async () => {
-    // 1. Tenta carregar o catálogo estático completo (+10.400 edições oficiais)
     try {
       const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
       const candidateUrls = [
@@ -79,7 +90,6 @@ export function CollectionProvider({ children }: { children: ReactNode }) {
       console.warn("[ComixFlix] Catálogo estático inacessível, tentando Firestore:", e);
     }
 
-    // 2. Se falhar ou estiver no navegador com Firebase configurado, consulta o Cloud Firestore
     try {
       if (isFirebaseConfigured) {
         const remoteComics = await getComicsFromFirestore();
@@ -92,7 +102,6 @@ export function CollectionProvider({ children }: { children: ReactNode }) {
       console.warn("[ComixFlix] Falha ao consultar Firestore no cliente:", e);
     }
 
-    // 3. Fallback para rota dinâmica de API (/api/comics) no localhost ou Vercel
     try {
       const res = await fetch("/api/comics");
       if (res.ok) {
@@ -106,66 +115,167 @@ export function CollectionProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Carrega estado persistido do localStorage e Cloud Firestore na montagem
+  // Inicializa o catálogo
   useEffect(() => {
-    const loadSavedState = async () => {
-      try {
-        if (typeof window !== "undefined") {
-          localStorage.removeItem(OLD_STORAGE_KEY);
-        }
-
-        const stored = localStorage.getItem(STORAGE_KEY);
-        let loadedState: Record<string, UserComic> = {};
-        if (stored) {
-          loadedState = JSON.parse(stored);
-        }
-
-        // Se local estiver vazio, tenta carregar do Cloud Firestore
-        try {
-          const remoteState = await getUserCollectionFromFirestore("default_user");
-          if (remoteState && Object.keys(remoteState).length > 0 && Object.keys(loadedState).length === 0) {
-            loadedState = remoteState;
-          }
-        } catch {
-          // Fallback silencioso para offline
-        }
-
-        setUserComics(loadedState);
-      } catch (e) {
-        console.warn("Erro ao carregar dados de coleção:", e);
-        setUserComics({});
-      } finally {
-        setIsLoaded(true);
-      }
-
-      reloadCatalog();
-    };
-
-    loadSavedState();
+    reloadCatalog();
   }, []);
 
-  // Salva no localStorage e sincroniza em tempo real com o Cloud Firestore
+  // Monitora alterações de rede (online/offline)
   useEffect(() => {
-    if (isLoaded) {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(userComics));
-        // Gravação direta no Cloud Firestore
-        saveUserCollectionToFirestore("default_user", userComics).catch((err) => {
-          console.warn("[ComixFlix] Falha na persistência Firestore:", err);
-        });
-      } catch (e) {
-        console.error("Erro ao persistir coleção:", e);
+    const handleOnline = () => {
+      if (user) {
+        setSyncStatus("synced");
       }
-    }
-  }, [userComics, isLoaded]);
+    };
+    const handleOffline = () => {
+      setSyncStatus("offline");
+    };
 
-  // Função para zerar a coleção pessoal
-  const clearCollection = () => {
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, [user]);
+
+  // Sincronização inteligente de 2 vias quando o usuário loga ou desloga
+  useEffect(() => {
+    let isCancelled = false;
+
+    const syncUserSession = async () => {
+      setIsLoaded(false);
+
+      if (!user) {
+        // Usuário deslogado: carrega dados locais de visitante
+        try {
+          const guestData = localStorage.getItem(GUEST_STORAGE_KEY);
+          setUserComics(guestData ? JSON.parse(guestData) : {});
+        } catch {
+          setUserComics({});
+        }
+        setSyncStatus(navigator.onLine ? "synced" : "offline");
+        setIsLoaded(true);
+        return;
+      }
+
+      // Usuário logado: Sincronização inteligente de 2 vias
+      setSyncStatus("syncing");
+
+      try {
+        // 1. Resgata marcações locais feitas em modo visitante
+        let localGuestComics: Record<string, UserComic> = {};
+        try {
+          const guestStr = localStorage.getItem(GUEST_STORAGE_KEY);
+          if (guestStr) {
+            localGuestComics = JSON.parse(guestStr);
+          }
+          // Compatibilidade com v2 anterior
+          const oldV2 = localStorage.getItem("comixflix_user_comics_v2");
+          if (oldV2 && Object.keys(localGuestComics).length === 0) {
+            localGuestComics = JSON.parse(oldV2);
+            localStorage.removeItem("comixflix_user_comics_v2");
+          }
+        } catch {}
+
+        // 2. Busca a coleção na nuvem (Firestore) do usuário logado
+        const remoteComics = (await getUserCollectionFromFirestore(user.uid)) || {};
+
+        // 3. Mesclagem em 2 vias: Remoto prevalece, complementado pelas marcações locais
+        const hasLocalGuest = Object.keys(localGuestComics).length > 0;
+        const consolidated: Record<string, UserComic> = {
+          ...remoteComics,
+          ...localGuestComics,
+        };
+
+        if (!isCancelled) {
+          setUserComics(consolidated);
+          localStorage.setItem(currentStorageKey, JSON.stringify(consolidated));
+
+          // Se havia dados locais de visitante, sincroniza para a nuvem
+          if (hasLocalGuest && isFirebaseConfigured) {
+            await saveUserCollectionToFirestore(user.uid, consolidated);
+            localStorage.removeItem(GUEST_STORAGE_KEY);
+            showToast("Suas marcações foram sincronizadas na sua conta na nuvem!", "success");
+          }
+
+          setSyncStatus("synced");
+        }
+      } catch (err) {
+        console.warn("[ComixFlix] Erro na sincronização com Firebase:", err);
+        setSyncStatus("offline");
+      } finally {
+        if (!isCancelled) {
+          setIsLoaded(true);
+        }
+      }
+    };
+
+    syncUserSession();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [user, currentStorageKey]);
+
+  // Salva no localStorage e sincroniza com o Firestore a cada alteração
+  const persistChanges = async (updatedComics: Record<string, UserComic>) => {
+    try {
+      localStorage.setItem(currentStorageKey, JSON.stringify(updatedComics));
+
+      if (user && isFirebaseConfigured) {
+        if (!navigator.onLine) {
+          setSyncStatus("offline");
+          return;
+        }
+
+        setSyncStatus("syncing");
+        const ok = await saveUserCollectionToFirestore(user.uid, updatedComics);
+        if (ok) {
+          setSyncStatus("synced");
+        } else {
+          setSyncStatus("offline");
+        }
+      }
+    } catch (e) {
+      console.error("Erro ao persistir coleção:", e);
+      setSyncStatus("offline");
+    }
+  };
+
+  // Força uma sincronização manual
+  const forceCloudSync = async () => {
+    if (!user || !isFirebaseConfigured) {
+      showToast("Conecte-se com sua conta para sincronizar com a nuvem.", "info");
+      return;
+    }
+    setSyncStatus("syncing");
+    try {
+      const ok = await saveUserCollectionToFirestore(user.uid, userComics);
+      if (ok) {
+        setSyncStatus("synced");
+        showToast("Coleção sincronizada com a nuvem com sucesso!", "success");
+      } else {
+        setSyncStatus("offline");
+        showToast("Falha na sincronização. Verifique sua conexão.", "info");
+      }
+    } catch {
+      setSyncStatus("offline");
+    }
+  };
+
+  // Limpa a coleção do usuário atual
+  const clearCollection = async () => {
     setUserComics({});
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({}));
+      localStorage.setItem(currentStorageKey, JSON.stringify({}));
+      if (user && isFirebaseConfigured) {
+        setSyncStatus("syncing");
+        await saveUserCollectionToFirestore(user.uid, {});
+        setSyncStatus("synced");
+      }
     } catch (e) {}
-    showToast("Sua coleção pessoal foi reiniciada e está 100% limpa.", "info");
+    showToast("Sua coleção foi reiniciada e está limpa.", "info");
   };
 
   const showToast = (title: string, type: ToastMessage["type"] = "info", undo?: () => void) => {
@@ -215,50 +325,52 @@ export function CollectionProvider({ children }: { children: ReactNode }) {
         toastMsg = `"${comicTitle}" adicionado à sua Estante!`;
         toastType = "collection";
       } else if (status === "li") {
-        toastMsg = `"${comicTitle}" marcado como Lido! Parabéns pela leitura.`;
+        toastMsg = `"${comicTitle}" marcado como Lido!`;
         toastType = "read";
       }
     }
 
-    setUserComics((prev) => {
-      const updated = { ...prev };
-      if (!newStatus) {
-        delete updated[comicId];
-      } else {
-        updated[comicId] = {
-          id: current ? current.id : `uc_${Date.now()}`,
-          comic_id: comicId,
-          status: newStatus,
-          nota_pessoal: current?.nota_pessoal ?? null,
-          data_adicao: current?.data_adicao ?? new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          preco_pago: current?.preco_pago ?? (comic?.preco_promocional ?? comic?.preco_normal ?? null),
-        };
-      }
-      return updated;
-    });
+    const updated = { ...userComics };
+    if (!newStatus) {
+      delete updated[comicId];
+    } else {
+      updated[comicId] = {
+        id: current ? current.id : `uc_${Date.now()}`,
+        comic_id: comicId,
+        status: newStatus,
+        nota_pessoal: current?.nota_pessoal ?? null,
+        data_adicao: current?.data_adicao ?? new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        preco_pago: current?.preco_pago ?? (comic?.preco_promocional ?? comic?.preco_normal ?? null),
+      };
+    }
 
-    // Toast com ação de Desfazer (Undo)
+    setUserComics(updated);
+    persistChanges(updated);
+
     showToast(toastMsg, toastType, () => {
       setUserComics(previousState);
+      persistChanges(previousState);
       showToast("Ação desfeita com sucesso.", "info");
     });
   };
 
   const setRating = (comicId: string, nota: number) => {
-    setUserComics((prev) => {
-      const current = prev[comicId];
-      if (!current) return prev;
-      return {
-        ...prev,
-        [comicId]: {
-          ...current,
-          nota_pessoal: nota,
-          status: "li",
-          updated_at: new Date().toISOString(),
-        },
-      };
-    });
+    const current = userComics[comicId];
+    if (!current) return;
+
+    const updated = {
+      ...userComics,
+      [comicId]: {
+        ...current,
+        nota_pessoal: nota,
+        status: "li" as const,
+        updated_at: new Date().toISOString(),
+      },
+    };
+
+    setUserComics(updated);
+    persistChanges(updated);
     showToast(`Avaliação de ${nota} estrelas registrada!`, "success");
   };
 
@@ -316,6 +428,7 @@ export function CollectionProvider({ children }: { children: ReactNode }) {
         activeModalComic,
         toasts,
         stats,
+        syncStatus,
         getComicStatus,
         toggleStatus,
         setRating,
@@ -325,6 +438,7 @@ export function CollectionProvider({ children }: { children: ReactNode }) {
         removeToast,
         clearCollection,
         reloadCatalog,
+        forceCloudSync,
       }}
     >
       {children}

@@ -63,20 +63,20 @@ export const ComicCard: React.FC<ComicCardProps> = ({ comic, showActions = true 
           )}
         </div>
 
-        {/* Hover / Touch QuickActions Scrim */}
+        {/* Faixa escura com ações rápidas por cima da imagem da HQ */}
         {showActions && (
           <div
             onClick={(e) => e.stopPropagation()}
-            className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-bg-canvas/95 via-bg-canvas/75 to-transparent flex items-center justify-between gap-1 opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200"
+            className="absolute inset-x-0 bottom-0 px-2 py-1.5 bg-[#090a0f]/90 backdrop-blur-md border-t border-white/10 flex items-center justify-between gap-1 shadow-[0_-4px_16px_rgba(0,0,0,0.85)] z-10 transition-all duration-200"
           >
             <button
               type="button"
               onClick={() => toggleStatus(comic.id, "quero")}
               title={isQuero ? "Remover da Wishlist" : "Adicionar à Wishlist (Quero)"}
-              className={`w-7 h-7 rounded-full flex items-center justify-center transition-transform active:scale-90 ${
+              className={`w-7 h-7 rounded-full flex items-center justify-center transition-all active:scale-90 ${
                 isQuero
-                  ? "bg-brand-primary text-text-primary shadow-md"
-                  : "bg-bg-elevated/90 text-text-secondary hover:text-brand-primary hover:bg-bg-elevated"
+                  ? "bg-brand-primary text-white shadow-[0_0_10px_rgba(229,9,20,0.7)] border border-red-400/60"
+                  : "bg-black/60 border border-white/20 text-white/90 hover:text-brand-primary hover:border-brand-primary/60 hover:bg-black/80"
               }`}
             >
               <Heart className={`w-3.5 h-3.5 ${isQuero ? "fill-current" : ""}`} />
@@ -86,10 +86,10 @@ export const ComicCard: React.FC<ComicCardProps> = ({ comic, showActions = true 
               type="button"
               onClick={() => toggleStatus(comic.id, "tenho")}
               title={isTenho ? "Remover da Estante" : "Marcar como Tenho"}
-              className={`w-7 h-7 rounded-full flex items-center justify-center transition-transform active:scale-90 ${
+              className={`w-7 h-7 rounded-full flex items-center justify-center transition-all active:scale-90 ${
                 isTenho
-                  ? "bg-status-collection text-bg-canvas font-bold shadow-md"
-                  : "bg-bg-elevated/90 text-text-secondary hover:text-status-collection hover:bg-bg-elevated"
+                  ? "bg-[#2563eb] text-white shadow-[0_0_10px_rgba(37,99,235,0.7)] border border-blue-400/60"
+                  : "bg-black/60 border border-white/20 text-white/90 hover:text-blue-400 hover:border-blue-400/60 hover:bg-black/80"
               }`}
             >
               <Library className="w-3.5 h-3.5" />
@@ -99,10 +99,10 @@ export const ComicCard: React.FC<ComicCardProps> = ({ comic, showActions = true 
               type="button"
               onClick={() => toggleStatus(comic.id, "li")}
               title={isLido ? "Desmarcar Lido" : "Marcar como Lido"}
-              className={`w-7 h-7 rounded-full flex items-center justify-center transition-transform active:scale-90 ${
+              className={`w-7 h-7 rounded-full flex items-center justify-center transition-all active:scale-90 ${
                 isLido
-                  ? "bg-status-success text-bg-canvas font-bold shadow-md"
-                  : "bg-bg-elevated/90 text-text-secondary hover:text-status-success hover:bg-bg-elevated"
+                  ? "bg-[#059669] text-white shadow-[0_0_10px_rgba(5,150,105,0.7)] border border-emerald-400/60"
+                  : "bg-black/60 border border-white/20 text-white/90 hover:text-emerald-400 hover:border-emerald-400/60 hover:bg-black/80"
               }`}
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
@@ -112,7 +112,7 @@ export const ComicCard: React.FC<ComicCardProps> = ({ comic, showActions = true 
               type="button"
               onClick={() => openComicDetail(comic)}
               title="Ver Detalhes"
-              className="w-7 h-7 rounded-full bg-bg-elevated/90 text-text-secondary hover:text-text-primary hover:bg-bg-elevated flex items-center justify-center transition-transform active:scale-90"
+              className="w-7 h-7 rounded-full bg-black/60 border border-white/20 text-white/90 hover:text-white hover:border-white/50 hover:bg-black/80 flex items-center justify-center transition-all active:scale-90"
             >
               <Eye className="w-3.5 h-3.5" />
             </button>

@@ -5,10 +5,9 @@ node_modules/
 
 # Environment and Secrets
 .env
-.env*.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env*
+**/.env
+**/.env*
 mcp_config.json
 scripts/git_push.js
 scripts/deploy_gh_pages.js
@@ -23,12 +22,16 @@ dist/
 tsconfig.tsbuildinfo
 next-env.d.ts
 
-# Temporary scraper dumps
+# Temporary scraper dumps & diagnostic scripts
 scripts/*.html
 scripts/*.webp
 scripts/*.xml
 scripts/panini_cover_cache.json
 scripts/base64_cache.json
+scripts/test-*.mjs
+scripts/diagnose-*.mjs
+scripts/inspect-*.mjs
+scripts/verify-v2-features.mjs
 
 # System and logs
 npm-debug.log*

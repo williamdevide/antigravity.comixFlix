@@ -21,21 +21,16 @@ import {
   Database,
   CheckCircle2,
   ExternalLink,
+  LogOut,
+  LogIn,
+  UserPlus,
+  RefreshCw,
 } from "lucide-react";
+import { useAuth } from "@/lib/context/auth-context";
 import { useCollection } from "@/lib/context/collection-context";
 import { Badge } from "@/components/ui/Badge";
+import { CloudSyncIndicator } from "@/components/ui/CloudSyncIndicator";
 import { ShareProfileModal } from "@/components/profile/ShareProfileModal";
-
-interface UserProfile {
-  name: string;
-  username: string;
-  email: string;
-  bio: string;
-  favoritePublisher: string;
-  avatarUrl: string;
-  notifyReleases: boolean;
-  notifyDiscounts: boolean;
-}
 
 const DEFAULT_AVATARS = [
   {
@@ -60,42 +55,78 @@ const DEFAULT_AVATARS = [
   },
 ];
 
-const PROFILE_STORAGE_KEY = "comixflix_user_profile_v1";
-
 export default function PerfilPage() {
-  const { stats, clearCollection, showToast } = useCollection();
+  const { user, profile, updateProfile, logout, isGuestMode, exitGuestMode, openAuthModal } = useAuth();
+  const { stats, clearCollection, showToast, syncStatus, forceCloudSync } = useCollection();
+
   const [activeTab, setActiveTab] = useState<"estatisticas" | "conta">("estatisticas");
   const [hideNetWorth, setHideNetWorth] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Perfil do Usuário
-  const [profile, setProfile] = useState<UserProfile>({
-    name: "William Colecionador",
-    username: "william_hqs",
-    email: "william@comixflix.com.br",
-    bio: "Colecionador ávido de quadrinhos físicos, focado em edições definitivas da Panini, lançamentos do Pipoca & Nanquim e clássicos Bonelli da Mythos.",
-    favoritePublisher: "Pipoca & Nanquim",
+  // Estado local para o formulário de edição
+  const [formData, setFormData] = useState({
+    name: "Colecionador",
+    username: "colecionador",
+    email: "",
+    bio: "Colecionador de quadrinhos físicos.",
+    favoritePublisher: "Panini",
     avatarUrl: DEFAULT_AVATARS[0].url,
     notifyReleases: true,
     notifyDiscounts: true,
   });
 
+  // Sincroniza dados com o perfil real do Firebase quando carregar
   useEffect(() => {
-    try {
-      const savedProfile = localStorage.getItem(PROFILE_STORAGE_KEY);
-      if (savedProfile) {
-        setProfile((prev) => ({ ...prev, ...JSON.parse(savedProfile) }));
-      }
-    } catch (e) {}
-  }, []);
+    if (profile) {
+      setFormData({
+        name: profile.name || user?.displayName || "Colecionador",
+        username: profile.username || "colecionador",
+        email: profile.email || user?.email || "",
+        bio: profile.bio || "Colecionador de quadrinhos físicos.",
+        favoritePublisher: profile.favoritePublisher || "Panini",
+        avatarUrl: profile.avatarUrl || user?.photoURL || DEFAULT_AVATARS[0].url,
+        notifyReleases: profile.notifyReleases ?? true,
+        notifyDiscounts: profile.notifyDiscounts ?? true,
+      });
+    } else if (user) {
+      setFormData((prev) => ({
+        ...prev,
+        name: user.displayName || "Colecionador",
+        email: user.email || "",
+        avatarUrl: user.photoURL || prev.avatarUrl,
+      }));
+    }
+  }, [profile, user]);
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSaving(true);
     try {
-      localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
-      showToast("Dados do perfil atualizados com sucesso!", "success");
-    } catch (e) {
-      showToast("Erro ao salvar dados localmente.", "info");
+      if (user) {
+        await updateProfile(formData);
+        showToast("Perfil atualizado no Firebase com sucesso!", "success");
+      } else {
+        showToast("Perfil local atualizado. Crie uma conta para salvar na nuvem.", "info");
+      }
+    } catch {
+      showToast("Erro ao salvar dados do perfil.", "info");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    if (window.confirm("Deseja realmente desconectar sua conta do ComixFlix?")) {
+      await logout();
+      window.location.href = "/";
+    }
+  };
+
+  const handleExitGuest = () => {
+    if (window.confirm("Deseja sair do Modo Visitante e voltar ao início?")) {
+      exitGuestMode();
+      window.location.href = "/";
     }
   };
 
@@ -112,39 +143,89 @@ export default function PerfilPage() {
   // Valor do patrimônio estimado
   const displayNetWorth = hideNetWorth
     ? "R$ ••••••"
-    : `R$ ${(stats.valorEstimadoTotal || 14820).toLocaleString("pt-BR", {
+    : `R$ ${(stats.valorEstimadoTotal || 0).toLocaleString("pt-BR", {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       })}`;
 
+  const currentAvatar =
+    formData.avatarUrl ||
+    user?.photoURL ||
+    DEFAULT_AVATARS[0].url;
+
   return (
-    <div className="pt-20 pb-20 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto space-y-8">
+    <div className="pt-20 pb-20 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto space-y-8 animate-fade-in">
+      {/* Banner de Aviso caso esteja navegando como visitante */}
+      {!user && (
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-brand-primary/15 via-bg-surface to-brand-primary/10 border border-brand-primary/30 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-card">
+          <div className="flex items-center gap-3 text-center sm:text-left">
+            <div className="w-10 h-10 rounded-xl bg-brand-primary/20 border border-brand-primary/40 flex items-center justify-center text-brand-primary shrink-0">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-xs font-bold text-text-primary">
+                Você está navegando no Modo Visitante
+              </h3>
+              <p className="text-xs text-text-secondary">
+                Crie sua conta ou faça login com o Google para ter sua coleção permanente salva no Firebase.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => openAuthModal("login")}
+              className="px-4 py-2 rounded-xl bg-bg-canvas hover:bg-bg-elevated border border-border-default text-xs font-bold text-text-primary transition-all flex items-center gap-1.5"
+            >
+              <LogIn className="w-3.5 h-3.5 text-brand-primary" />
+              Acessar
+            </button>
+            <button
+              onClick={() => openAuthModal("register")}
+              className="px-4 py-2 rounded-xl bg-brand-primary hover:bg-brand-primary-hover text-xs font-bold text-white transition-all flex items-center gap-1.5 shadow-button"
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+              Cadastrar Conta
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header do Perfil com Visual Stitch */}
       <div className="relative rounded-3xl overflow-hidden border border-border-default bg-bg-surface shadow-card">
         {/* Banner de Fundo Cinemático */}
         <div className="h-40 sm:h-48 bg-gradient-to-r from-brand-primary/40 via-[#18181b] to-purple-900/30 relative">
           <div className="absolute inset-0 bg-black/30 backdrop-blur-[1px]" />
           <div className="absolute top-4 right-4 flex items-center gap-2">
-            <span className="text-xs font-black px-3 py-1 rounded-full bg-brand-primary/20 border border-brand-primary/30 text-brand-primary flex items-center gap-1.5 shadow-sm">
-              <Sparkles className="w-3.5 h-3.5" />
-              NÍVEL 5 • CURADOR MESTRE
-            </span>
+            {/* Indicador de Nuvem no Perfil */}
+            <CloudSyncIndicator status={syncStatus} showLabel />
+            <button
+              type="button"
+              onClick={forceCloudSync}
+              className="p-1.5 rounded-full bg-bg-surface/80 hover:bg-bg-elevated border border-border-default text-text-secondary hover:text-text-primary transition-all"
+              title="Forçar sincronização com a nuvem"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
 
-        {/* Informações Principais & Avatar com Anel Gradiente Stitch */}
+        {/* Informações Principais & Avatar */}
         <div className="px-6 pb-6 pt-0 relative flex flex-col sm:flex-row items-center sm:items-end justify-between gap-6 -mt-20 sm:-mt-16">
           <div className="flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left">
-            {/* Anel Gradiente Stitch */}
+            {/* Anel Gradiente com Foto */}
             <div className="relative group">
               <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full p-1 bg-gradient-to-tr from-brand-primary via-amber-500 to-purple-600 shadow-elevated">
                 <img
-                  src={profile.avatarUrl}
-                  alt={profile.name}
+                  src={currentAvatar}
+                  alt={formData.name}
                   className="w-full h-full rounded-full object-cover border-2 border-bg-surface bg-bg-elevated"
                 />
               </div>
-              <span className="absolute bottom-1 right-1 w-6 h-6 rounded-full bg-emerald-500 border-2 border-bg-surface flex items-center justify-center text-[10px] text-white font-bold" title="Colecionador Verificado">
+              <span
+                className="absolute bottom-1 right-1 w-6 h-6 rounded-full bg-emerald-500 border-2 border-bg-surface flex items-center justify-center text-[10px] text-white font-bold"
+                title={user ? "Conta Autenticada no Firebase" : "Visitante"}
+              >
                 ✓
               </span>
             </div>
@@ -152,16 +233,25 @@ export default function PerfilPage() {
             <div className="space-y-1.5">
               <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                 <h1 className="text-2xl sm:text-3xl font-black text-text-primary tracking-tight">
-                  {profile.name}
+                  {formData.name}
                 </h1>
-                <span className="text-xs font-bold text-text-tertiary">@{profile.username}</span>
+                <span className="text-xs font-bold text-text-tertiary">
+                  @{formData.username}
+                </span>
+                {user && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-950/60 border border-emerald-500/40 text-emerald-400">
+                    Nuvem Ativa
+                  </span>
+                )}
               </div>
-              <p className="text-xs text-text-secondary max-w-md leading-relaxed">{profile.bio}</p>
+              <p className="text-xs text-text-secondary max-w-md leading-relaxed">
+                {formData.bio}
+              </p>
 
               {/* Tags de Foco do Colecionador */}
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1">
                 <span className="text-xs px-3 py-1 rounded-full bg-bg-elevated text-text-secondary border border-border-default font-medium">
-                  {profile.favoritePublisher}
+                  {formData.favoritePublisher}
                 </span>
                 <span className="text-xs px-3 py-1 rounded-full bg-status-info/10 text-status-info border border-status-info/20 font-semibold">
                   {stats.totalTenho} na Estante
@@ -173,184 +263,186 @@ export default function PerfilPage() {
             </div>
           </div>
 
-          {/* Ações Rápidas: Compartilhar Perfil & Ver Coleção */}
+          {/* Ações Rápidas */}
           <div className="flex flex-wrap items-center justify-center gap-3">
             <button
               type="button"
               onClick={() => setIsShareModalOpen(true)}
-              className="px-4 py-2.5 rounded-xl text-xs font-black bg-brand-primary hover:bg-brand-primary-hover text-white shadow-elevated transition-all flex items-center gap-2"
+              className="px-4 py-2 rounded-xl bg-bg-elevated hover:bg-bg-elevated/80 border border-border-default text-xs font-bold text-text-primary transition-all flex items-center gap-2 shadow-sm"
             >
-              <Share2 className="w-4 h-4" />
+              <Share2 className="w-4 h-4 text-brand-primary" />
               Compartilhar Perfil
             </button>
 
-            <Link
-              href="/colecao"
-              className="px-4 py-2.5 rounded-xl text-xs font-bold bg-bg-elevated hover:bg-border-default text-text-primary border border-border-default transition-all flex items-center gap-1.5"
-            >
-              <BookOpen className="w-4 h-4" />
-              Ver Minha Coleção
-            </Link>
+            {user ? (
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="px-4 py-2 rounded-xl bg-status-danger/10 hover:bg-status-danger/20 border border-status-danger/30 text-xs font-bold text-status-danger transition-all flex items-center gap-2 cursor-pointer"
+                title="Desconectar da sua conta"
+              >
+                <LogOut className="w-4 h-4" />
+                Sair da Conta
+              </button>
+            ) : (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => openAuthModal("login")}
+                  className="px-4 py-2 rounded-xl bg-brand-primary hover:bg-brand-primary-hover text-xs font-bold text-white transition-all flex items-center gap-2 shadow-button cursor-pointer"
+                >
+                  <LogIn className="w-4 h-4" />
+                  Fazer Login
+                </button>
+                {isGuestMode && (
+                  <button
+                    type="button"
+                    onClick={handleExitGuest}
+                    className="px-4 py-2 rounded-xl bg-status-danger/10 hover:bg-status-danger/20 border border-status-danger/30 text-xs font-bold text-status-danger transition-all flex items-center gap-2 cursor-pointer"
+                    title="Encerrar Modo Visitante e voltar ao início"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Sair da Visita
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
         {/* Abas do Perfil */}
-        <div className="flex border-t border-border-default px-6 bg-bg-canvas/40">
+        <div className="flex border-t border-border-default px-6 bg-bg-elevated/30">
           <button
             type="button"
             onClick={() => setActiveTab("estatisticas")}
-            className={`flex items-center gap-2 py-3.5 px-4 text-sm font-bold border-b-2 transition-all ${
+            className={`py-3 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition-all ${
               activeTab === "estatisticas"
                 ? "border-brand-primary text-brand-primary"
                 : "border-transparent text-text-secondary hover:text-text-primary"
             }`}
           >
-            <Award className="w-4 h-4" />
-            Estatísticas & Conquistas
+            <TrendingUp className="w-4 h-4" />
+            Estatísticas da Minha Coleção
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("conta")}
-            className={`flex items-center gap-2 py-3.5 px-4 text-sm font-bold border-b-2 transition-all ${
+            className={`py-3 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition-all ${
               activeTab === "conta"
                 ? "border-brand-primary text-brand-primary"
                 : "border-transparent text-text-secondary hover:text-text-primary"
             }`}
           >
             <Settings className="w-4 h-4" />
-            Minha Conta & Preferências
+            Configurações da Conta
           </button>
         </div>
       </div>
 
-      {/* CONTEÚDO DA ABA 1: ESTATÍSTICAS, PATRIMÔNIO & CONQUISTAS (STITCH DESIGN) */}
+      {/* CONTEÚDO DA ABA 1: ESTATÍSTICAS */}
       {activeTab === "estatisticas" && (
         <div className="space-y-6">
-          {/* Card de Patrimônio com Toggle de Olho (Stitch Screen 98a7fcf90b0b4b9e99cbd74986c1fdf7) */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="md:col-span-2 p-6 rounded-3xl bg-bg-surface border border-border-default shadow-card space-y-4 relative overflow-hidden">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-brand-primary" />
-                  <span className="text-xs font-bold uppercase tracking-wider text-text-secondary">
-                    Patrimônio Estimado da Coleção
-                  </span>
-                </div>
+          {/* Métricas Principais da Coleção */}
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="p-5 rounded-2xl bg-bg-surface border border-border-default shadow-card flex flex-col justify-between space-y-2">
+              <div className="flex items-center justify-between text-text-tertiary">
+                <span className="text-xs font-bold uppercase tracking-wider">Estante Física</span>
+                <BookOpen className="w-4 h-4 text-brand-primary" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-black text-text-primary">{stats.totalTenho}</span>
+                <span className="text-xs font-medium text-text-secondary">edições</span>
+              </div>
+              <span className="text-[11px] text-text-muted">Total de volumes em mãos</span>
+            </div>
 
-                {/* Botão de Toggle Olho Stitch */}
+            <div className="p-5 rounded-2xl bg-bg-surface border border-border-default shadow-card flex flex-col justify-between space-y-2">
+              <div className="flex items-center justify-between text-text-tertiary">
+                <span className="text-xs font-bold uppercase tracking-wider">Lidas / Concluídas</span>
+                <CheckCircle2 className="w-4 h-4 text-status-success" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-black text-text-primary">{stats.totalLidos}</span>
+                <span className="text-xs font-semibold text-status-success">
+                  ({stats.percentualLidos}%)
+                </span>
+              </div>
+              <span className="text-[11px] text-text-muted">Leituras concluídas</span>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-bg-surface border border-border-default shadow-card flex flex-col justify-between space-y-2">
+              <div className="flex items-center justify-between text-text-tertiary">
+                <span className="text-xs font-bold uppercase tracking-wider">Lista de Desejos</span>
+                <Heart className="w-4 h-4 text-status-warning" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-black text-text-primary">{stats.totalQuero}</span>
+                <span className="text-xs font-medium text-text-secondary">edições</span>
+              </div>
+              <span className="text-[11px] text-text-muted">No radar de compras</span>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-bg-surface border border-border-default shadow-card flex flex-col justify-between space-y-2">
+              <div className="flex items-center justify-between text-text-tertiary">
+                <span className="text-xs font-bold uppercase tracking-wider">Patrimônio da Coleção</span>
                 <button
                   type="button"
                   onClick={() => setHideNetWorth(!hideNetWorth)}
-                  className="p-2 rounded-xl text-text-secondary hover:text-text-primary hover:bg-bg-elevated transition-colors border border-border-default"
-                  title={hideNetWorth ? "Exibir valor estimado" : "Ocultar valor estimado"}
-                  aria-label="Alternar visibilidade do patrimônio"
+                  className="hover:text-text-primary"
+                  title={hideNetWorth ? "Mostrar valor" : "Ocultar valor"}
                 >
-                  {hideNetWorth ? <EyeOff className="w-4 h-4 text-amber-500" /> : <Eye className="w-4 h-4 text-brand-primary" />}
+                  {hideNetWorth ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-
-              <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2">
-                <span className="text-3xl sm:text-4xl font-black text-text-primary tracking-tight font-mono">
+              <div className="flex items-baseline gap-1">
+                <span className="text-2xl font-black text-text-primary tracking-tight">
                   {displayNetWorth}
                 </span>
-                <span className="text-xs font-bold text-emerald-500 flex items-center gap-1">
-                  ▲ +15% de valorização este mês
-                </span>
               </div>
-
-              {/* Barra Segmentada de Distribuição */}
-              <div className="space-y-2 pt-2">
-                <div className="flex items-center justify-between text-xs font-semibold text-text-secondary">
-                  <span>Distribuição por Selo / Universo</span>
-                  <span>{stats.totalTenho} edições catalogadas</span>
-                </div>
-                <div className="w-full h-3 rounded-full bg-bg-elevated overflow-hidden flex">
-                  <div style={{ width: "42%" }} className="h-full bg-red-600" title="Panini Marvel (42%)" />
-                  <div style={{ width: "26%" }} className="h-full bg-blue-600" title="Panini DC (26%)" />
-                  <div style={{ width: "18%" }} className="h-full bg-amber-500" title="Pipoca & Nanquim (18%)" />
-                  <div style={{ width: "14%" }} className="h-full bg-emerald-600" title="Mythos Bonelli (14%)" />
-                </div>
-                <div className="flex flex-wrap gap-4 text-[11px] text-text-tertiary pt-1">
-                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-red-600" /> Marvel (42%)</span>
-                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-blue-600" /> DC Comics (26%)</span>
-                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> Pipoca & Nanquim (18%)</span>
-                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-600" /> Mythos Bonelli (14%)</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Ritmo de Leitura & Metas */}
-            <div className="p-6 rounded-3xl bg-bg-surface border border-border-default shadow-card space-y-4 flex flex-col justify-between">
-              <div className="space-y-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-text-secondary block">
-                  Ritmo de Leitura
-                </span>
-                <p className="text-3xl font-black text-text-primary">
-                  {stats.totalLidos} <span className="text-base font-normal text-text-tertiary">lidos</span>
-                </p>
-                <p className="text-xs text-text-secondary leading-relaxed">
-                  Média de <strong>6 edições/mês</strong>. Você completou <strong>{stats.percentualLidos || 0}%</strong> da sua estante atual.
-                </p>
-              </div>
-
-              <div className="p-3 rounded-2xl bg-bg-elevated border border-border-default flex items-center justify-between">
-                <span className="text-xs font-bold text-text-primary">Meta de 2026</span>
-                <span className="text-xs font-black text-brand-primary">35 / 50 HQs</span>
-              </div>
+              <span className="text-[11px] text-text-muted">Baseado nos preços de capa/promoção</span>
             </div>
           </div>
 
-          {/* Conquistas e Badges do Colecionador (Stitch Screen 98a7fcf90b0b4b9e99cbd74986c1fdf7) */}
-          <div className="p-6 rounded-3xl bg-bg-surface border border-border-default shadow-card space-y-4">
-            <h2 className="text-base font-black text-text-primary tracking-tight flex items-center gap-2">
-              <Award className="w-5 h-5 text-amber-500" />
-              Insígnias & Conquistas de Colecionador
+          {/* Distribuição por Editoras */}
+          <div className="rounded-3xl p-6 bg-bg-surface border border-border-default shadow-card space-y-4">
+            <h2 className="text-base font-bold text-text-primary flex items-center gap-2">
+              <Layers className="w-4 h-4 text-brand-primary" />
+              Distribuição por Editoras
             </h2>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="p-4 rounded-2xl bg-bg-elevated border border-border-default text-center space-y-2 group hover:border-brand-primary/40 transition-colors">
-                <div className="w-12 h-12 mx-auto rounded-2xl bg-red-600/10 text-red-500 flex items-center justify-center text-xl font-black shadow-sm">
-                  𝗫
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {Object.entries(stats.distribuicaoEditoras).map(([editora, count]) => {
+                const percent = stats.totalTenho > 0 ? Math.round((count / stats.totalTenho) * 100) : 0;
+                return (
+                  <div
+                    key={editora}
+                    className="p-4 rounded-xl bg-bg-elevated border border-border-default flex items-center justify-between"
+                  >
+                    <div>
+                      <span className="text-xs font-bold text-text-primary">{editora}</span>
+                      <p className="text-[11px] text-text-muted">{count} edições ({percent}%)</p>
+                    </div>
+                    <span className="text-base font-black text-brand-primary">{percent}%</span>
+                  </div>
+                );
+              })}
+              {Object.keys(stats.distribuicaoEditoras).length === 0 && (
+                <div className="sm:col-span-3 text-center py-6 text-xs text-text-muted">
+                  Nenhuma edição cadastrada na estante ainda. Adicione quadrinhos para ver as estatísticas!
                 </div>
-                <h3 className="text-xs font-black text-text-primary">Mestre Mutante</h3>
-                <p className="text-[10px] text-text-tertiary">Mais de 50 edições de X-Men colecionadas</p>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-bg-elevated border border-border-default text-center space-y-2 group hover:border-brand-primary/40 transition-colors">
-                <div className="w-12 h-12 mx-auto rounded-2xl bg-blue-600/10 text-blue-500 flex items-center justify-center text-xl font-black shadow-sm">
-                  🦇
-                </div>
-                <h3 className="text-xs font-black text-text-primary">Morcego de Gotham</h3>
-                <p className="text-[10px] text-text-tertiary">Run completa do Batman Novos 52</p>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-bg-elevated border border-border-default text-center space-y-2 group hover:border-brand-primary/40 transition-colors">
-                <div className="w-12 h-12 mx-auto rounded-2xl bg-amber-600/10 text-amber-500 flex items-center justify-center text-xl font-black shadow-sm">
-                  🤠
-                </div>
-                <h3 className="text-xs font-black text-text-primary">Colecionador Bonelli</h3>
-                <p className="text-[10px] text-text-tertiary">Coleção com Tex e clássicos da Mythos</p>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-bg-elevated border border-border-default text-center space-y-2 group hover:border-brand-primary/40 transition-colors">
-                <div className="w-12 h-12 mx-auto rounded-2xl bg-purple-600/10 text-purple-500 flex items-center justify-center text-xl font-black shadow-sm">
-                  📖
-                </div>
-                <h3 className="text-xs font-black text-text-primary">Guardião da Nona Arte</h3>
-                <p className="text-[10px] text-text-tertiary">Edições integrais Pipoca & Nanquim</p>
-              </div>
+              )}
             </div>
           </div>
 
-          {/* Atalho Especial para a Central de Scraping */}
-          <div className="p-6 rounded-3xl bg-gradient-to-r from-brand-primary/10 via-bg-surface to-bg-surface border border-brand-primary/20 shadow-card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="space-y-1">
-              <h3 className="text-sm font-bold text-text-primary flex items-center gap-2">
+          {/* Banner de Scraping e Catálogo */}
+          <div className="rounded-3xl p-6 bg-gradient-to-r from-bg-surface via-bg-elevated to-bg-surface border border-border-default flex flex-col sm:flex-row items-center justify-between gap-4 shadow-card">
+            <div className="space-y-1 text-center sm:text-left">
+              <h3 className="text-sm font-bold text-text-primary flex items-center gap-2 justify-center sm:justify-start">
                 <Database className="w-4 h-4 text-brand-primary" />
-                Deseja sincronizar novos quadrinhos das editoras?
+                Catálogo Unificado de +10.400 Edições Oficiais
               </h3>
               <p className="text-xs text-text-secondary">
-                A Central de Scraping agora possui sua página dedicada com métricas detalhadas de importação por site.
+                Consulte lançamentos e atualizações das editoras Panini, Mythos, Pipoca & Nanquim e Cia das Letras.
               </p>
             </div>
 
@@ -358,7 +450,7 @@ export default function PerfilPage() {
               href="/scraping"
               className="px-5 py-2.5 rounded-xl bg-brand-primary hover:bg-brand-primary-hover text-white text-xs font-bold shadow-card transition-all flex items-center gap-2 shrink-0"
             >
-              Acessar Central de Scraping →
+              Central de Scraping →
             </Link>
           </div>
         </div>
@@ -370,18 +462,25 @@ export default function PerfilPage() {
           {/* Formulário de Perfil */}
           <form onSubmit={handleSaveProfile} className="lg:col-span-2 space-y-6">
             <div className="rounded-3xl p-6 bg-bg-surface border border-border-default space-y-6 shadow-card">
-              <h2 className="text-lg font-bold text-text-primary flex items-center gap-2">
-                <User className="w-5 h-5 text-brand-primary" />
-                Dados Pessoais do Colecionador
-              </h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-bold text-text-primary flex items-center gap-2">
+                  <User className="w-5 h-5 text-brand-primary" />
+                  Dados Pessoais do Colecionador
+                </h2>
+                {user && (
+                  <span className="text-[11px] font-semibold text-emerald-400 bg-emerald-950/40 px-2.5 py-1 rounded-full border border-emerald-500/30">
+                    Sincronizado no Firestore
+                  </span>
+                )}
+              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-text-secondary">Nome Completo</label>
                   <input
                     type="text"
-                    value={profile.name}
-                    onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     className="w-full h-10 px-3.5 rounded-xl bg-bg-elevated border border-border-default text-sm text-text-primary focus:outline-none focus:border-brand-primary"
                     required
                   />
@@ -391,8 +490,8 @@ export default function PerfilPage() {
                   <label className="text-xs font-semibold text-text-secondary">Nome de Usuário (@)</label>
                   <input
                     type="text"
-                    value={profile.username}
-                    onChange={(e) => setProfile({ ...profile, username: e.target.value })}
+                    value={formData.username}
+                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                     className="w-full h-10 px-3.5 rounded-xl bg-bg-elevated border border-border-default text-sm text-text-primary focus:outline-none focus:border-brand-primary"
                     required
                   />
@@ -405,9 +504,10 @@ export default function PerfilPage() {
                   <Mail className="w-4 h-4 absolute left-3.5 top-3 text-text-tertiary" />
                   <input
                     type="email"
-                    value={profile.email}
-                    onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                    className="w-full h-10 pl-10 pr-3.5 rounded-xl bg-bg-elevated border border-border-default text-sm text-text-primary focus:outline-none focus:border-brand-primary"
+                    value={formData.email}
+                    disabled={Boolean(user?.email)}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="w-full h-10 pl-10 pr-3.5 rounded-xl bg-bg-elevated border border-border-default text-sm text-text-primary focus:outline-none focus:border-brand-primary disabled:opacity-75 disabled:cursor-not-allowed"
                     required
                   />
                 </div>
@@ -417,8 +517,8 @@ export default function PerfilPage() {
                 <label className="text-xs font-semibold text-text-secondary">Biografia / Apresentação</label>
                 <textarea
                   rows={3}
-                  value={profile.bio}
-                  onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+                  value={formData.bio}
+                  onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
                   className="w-full p-3 rounded-xl bg-bg-elevated border border-border-default text-sm text-text-primary focus:outline-none focus:border-brand-primary resize-none"
                   placeholder="Fale sobre seus autores prediletos, selos colecionados..."
                 />
@@ -427,8 +527,8 @@ export default function PerfilPage() {
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-text-secondary">Editora Favorita</label>
                 <select
-                  value={profile.favoritePublisher}
-                  onChange={(e) => setProfile({ ...profile, favoritePublisher: e.target.value })}
+                  value={formData.favoritePublisher}
+                  onChange={(e) => setFormData({ ...formData, favoritePublisher: e.target.value })}
                   className="w-full h-10 px-3.5 rounded-xl bg-bg-elevated border border-border-default text-sm text-text-primary focus:outline-none focus:border-brand-primary"
                 >
                   <option value="Panini">Panini Brasil (Marvel, DC, Planet Manga)</option>
@@ -446,9 +546,9 @@ export default function PerfilPage() {
                     <button
                       key={av.id}
                       type="button"
-                      onClick={() => setProfile({ ...profile, avatarUrl: av.url })}
+                      onClick={() => setFormData({ ...formData, avatarUrl: av.url })}
                       className={`relative rounded-full p-0.5 border-2 transition-transform hover:scale-105 ${
-                        profile.avatarUrl === av.url ? "border-brand-primary" : "border-transparent"
+                        formData.avatarUrl === av.url ? "border-brand-primary" : "border-transparent"
                       }`}
                     >
                       <img src={av.url} alt={av.label} className="w-12 h-12 rounded-full object-cover" />
@@ -460,9 +560,10 @@ export default function PerfilPage() {
               <div className="pt-4 border-t border-border-default flex items-center justify-end">
                 <button
                   type="submit"
-                  className="px-6 py-2.5 rounded-xl bg-brand-primary hover:bg-brand-primary-hover text-white text-sm font-bold shadow-card transition-all"
+                  disabled={isSaving}
+                  className="px-6 py-2.5 rounded-xl bg-brand-primary hover:bg-brand-primary-hover text-white text-sm font-bold shadow-card transition-all disabled:opacity-50"
                 >
-                  Salvar Alterações
+                  {isSaving ? "Gravando..." : "Salvar Alterações"}
                 </button>
               </div>
             </div>
@@ -481,8 +582,8 @@ export default function PerfilPage() {
                   <span>Novos lançamentos da editora favorita</span>
                   <input
                     type="checkbox"
-                    checked={profile.notifyReleases}
-                    onChange={(e) => setProfile({ ...profile, notifyReleases: e.target.checked })}
+                    checked={formData.notifyReleases}
+                    onChange={(e) => setFormData({ ...formData, notifyReleases: e.target.checked })}
                     className="w-4 h-4 rounded text-brand-primary focus:ring-brand-primary"
                   />
                 </label>
@@ -491,8 +592,8 @@ export default function PerfilPage() {
                   <span>Quedas de preço e promoções</span>
                   <input
                     type="checkbox"
-                    checked={profile.notifyDiscounts}
-                    onChange={(e) => setProfile({ ...profile, notifyDiscounts: e.target.checked })}
+                    checked={formData.notifyDiscounts}
+                    onChange={(e) => setFormData({ ...formData, notifyDiscounts: e.target.checked })}
                     className="w-4 h-4 rounded text-brand-primary focus:ring-brand-primary"
                   />
                 </label>
@@ -512,12 +613,41 @@ export default function PerfilPage() {
               <button
                 type="button"
                 onClick={handleClearCollectionPrompt}
-                className="w-full py-2.5 px-4 rounded-xl border border-status-error/30 bg-status-error/10 hover:bg-status-error/20 text-status-error text-xs font-bold transition-colors flex items-center justify-center gap-2"
+                className="w-full py-2.5 px-4 rounded-xl border border-status-danger/30 bg-status-danger/10 hover:bg-status-danger/20 text-status-danger text-xs font-bold transition-colors flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Trash2 className="w-4 h-4" />
                 Limpar / Resetar Minha Coleção
               </button>
             </div>
+
+            {/* Informações da Plataforma & Autoria Técnica com Link Sobre Nós */}
+            <Link
+              href="/sobre"
+              className="rounded-3xl p-5 bg-bg-surface hover:bg-bg-elevated/80 border border-border-default hover:border-brand-primary/40 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-card transition-all group cursor-pointer"
+              title="Conheça a equipe desenvolvedora Milkfed Devs&&Reqs Lords - Sobre Nós"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-bg-elevated border border-border-default flex items-center justify-center p-1.5 shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+                  <img
+                    src="/branding/logo-milkfed.png"
+                    alt="Milkfed Devs&&Reqs Lords"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold text-text-primary group-hover:text-brand-primary transition-colors">
+                    ComixFlix HQ • Versão Oficial v1.0
+                  </span>
+                  <span className="text-[11px] text-text-tertiary">
+                    Engenharia e desenvolvimento por <strong className="text-text-secondary">Milkfed Devs&&Reqs Lords</strong>
+                  </span>
+                </div>
+              </div>
+              <span className="px-2.5 py-1 rounded-full bg-brand-primary/10 text-brand-primary text-[10px] font-bold uppercase tracking-wider border border-brand-primary/20 flex items-center gap-1">
+                <span>Sobre Nós</span>
+                <span>→</span>
+              </span>
+            </Link>
           </div>
         </div>
       )}
@@ -526,7 +656,12 @@ export default function PerfilPage() {
       <ShareProfileModal
         isOpen={isShareModalOpen}
         onClose={() => setIsShareModalOpen(false)}
-        profile={profile}
+        profile={{
+          name: formData.name,
+          username: formData.username,
+          avatarUrl: currentAvatar,
+          favoritePublisher: formData.favoritePublisher,
+        }}
         stats={stats}
       />
     </div>

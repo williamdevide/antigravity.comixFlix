@@ -127,7 +127,7 @@ export const ShareProfileModal: React.FC<ShareProfileModalProps> = ({
 
               {/* Top: Logo & Badge */}
               <div className="relative z-10 flex items-center justify-between">
-                <Logo className="h-6 w-auto" />
+                <Logo size="sm" />
                 <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-brand-primary/30 border border-brand-primary/40 text-red-300">
                   NÍVEL 5 • CURADOR
                 </span>
@@ -191,7 +191,7 @@ export const ShareProfileModal: React.FC<ShareProfileModalProps> = ({
               <div className="absolute -top-10 -right-10 w-48 h-48 bg-brand-primary/20 rounded-full blur-3xl pointer-events-none" />
 
               <div className="flex items-center justify-between">
-                <Logo className="h-6 w-auto" />
+                <Logo size="sm" />
                 <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-brand-primary/30 border border-brand-primary/40 text-red-300">
                   NÍVEL 5 • COLECIONADOR
                 </span>
