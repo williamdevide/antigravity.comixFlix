@@ -1,4 +1,5 @@
 import React from "react";
+import { getAssetPath } from "@/lib/utils/asset";
 
 interface LogoProps {
   className?: string;
@@ -42,7 +43,7 @@ export const Logo: React.FC<LogoProps> = ({
         }}
       >
         <img
-          src="/branding/logo.jpg"
+          src={getAssetPath("/branding/logo.jpg")}
           alt="ComixFlix Logo"
           className="w-full h-full object-cover object-center scale-105"
         />

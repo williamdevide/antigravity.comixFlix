@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { ArrowLeft, Code2, Sparkles, ShieldCheck, Database, Rocket, Heart, BookOpen, Layers, Cpu, Award } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
+import { getAssetPath } from "@/lib/utils/asset";
 
 export default function SobreNosPage() {
   return (
@@ -29,7 +30,7 @@ export default function SobreNosPage() {
             <span className="text-text-tertiary">×</span>
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-bg-elevated border border-border-default">
               <img
-                src="/branding/logo-milkfed.png"
+                src={getAssetPath("/branding/logo-milkfed.png")}
                 alt="Milkfed Devs&&Reqs Lords"
                 className="w-4 h-4 object-contain"
               />
@@ -77,7 +78,7 @@ export default function SobreNosPage() {
             <div className="p-6 rounded-2xl bg-bg-surface border border-border-default shadow-card flex flex-col gap-4 relative overflow-hidden group hover:border-brand-primary/40 transition-all">
               <div className="w-12 h-12 rounded-xl bg-black border border-brand-primary/40 flex items-center justify-center p-2 shadow-inner">
                 <img
-                  src="/branding/logo.jpg"
+                  src={getAssetPath("/branding/logo.jpg")}
                   alt="ComixFlix Logo"
                   className="w-full h-full object-cover rounded-lg"
                 />
@@ -95,7 +96,7 @@ export default function SobreNosPage() {
             <div className="p-6 rounded-2xl bg-bg-surface border border-border-default shadow-card flex flex-col gap-4 relative overflow-hidden group hover:border-brand-primary/40 transition-all">
               <div className="w-12 h-12 rounded-xl bg-bg-elevated border border-border-default flex items-center justify-center p-2 shadow-inner">
                 <img
-                  src="/branding/logo-milkfed.png"
+                  src={getAssetPath("/branding/logo-milkfed.png")}
                   alt="Milkfed Devs&&Reqs Lords"
                   className="w-full h-full object-contain"
                 />
@@ -205,7 +206,7 @@ export default function SobreNosPage() {
         <section className="text-center p-8 sm:p-10 rounded-3xl bg-gradient-to-b from-bg-surface via-bg-surface to-bg-elevated/40 border border-border-default flex flex-col items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-bg-elevated border border-border-default flex items-center justify-center p-2 shadow-sm">
             <img
-              src="/branding/logo-milkfed.png"
+              src={getAssetPath("/branding/logo-milkfed.png")}
               alt="Milkfed Devs&&Reqs Lords"
               className="w-full h-full object-contain"
             />

@@ -28,15 +28,15 @@ export const metadata: Metadata = {
     "estante virtual",
     "wishlist",
   ],
-  manifest: "/manifest.json",
+  manifest: `${process.env.NEXT_PUBLIC_BASE_PATH || ""}/manifest.json`,
   icons: {
     icon: [
-      { url: "/favicon.ico" },
-      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+      { url: `${process.env.NEXT_PUBLIC_BASE_PATH || ""}/favicon.ico` },
+      { url: `${process.env.NEXT_PUBLIC_BASE_PATH || ""}/icon-192.png`, sizes: "192x192", type: "image/png" },
+      { url: `${process.env.NEXT_PUBLIC_BASE_PATH || ""}/icon-512.png`, sizes: "512x512", type: "image/png" },
     ],
     apple: [
-      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: `${process.env.NEXT_PUBLIC_BASE_PATH || ""}/icon-192.png`, sizes: "192x192", type: "image/png" },
     ],
   },
 };

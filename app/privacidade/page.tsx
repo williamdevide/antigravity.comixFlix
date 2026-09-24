@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { getAssetPath } from "@/lib/utils/asset";
 
 export default function PoliticaPrivacidadePage() {
   const router = useRouter();
@@ -32,7 +33,7 @@ export default function PoliticaPrivacidadePage() {
             </button>
             <Link href="/" className="flex items-center gap-2 select-none">
               <div className="w-8 h-8 rounded-lg overflow-hidden border border-[#e50914]/40 bg-black shrink-0 shadow-sm">
-                <img src="/branding/logo.jpg" alt="Logo" className="w-full h-full object-cover" />
+                <img src={getAssetPath("/branding/logo.jpg")} alt="Logo" className="w-full h-full object-cover" />
               </div>
               <span className="text-[19px] font-extrabold tracking-tight text-[#e50914] leading-none">
                 COMIX<span className="text-white">FLIX</span>
@@ -305,7 +306,7 @@ export default function PoliticaPrivacidadePage() {
                 title="Conheça a Milkfed Devs&&Reqs Lords - Sobre Nós"
               >
                 <img
-                  src="/branding/logo-milkfed.png"
+                  src={getAssetPath("/branding/logo-milkfed.png")}
                   alt="Milkfed Devs&&Reqs Lords"
                   className="w-3.5 h-3.5 object-contain"
                 />

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { playNetflixComicIntroSound } from "@/lib/utils/audio";
+import { getAssetPath } from "@/lib/utils/asset";
 
 interface NetflixIntroOverlayProps {
   onComplete: () => void;
@@ -44,7 +45,7 @@ export function NetflixIntroOverlay({ onComplete }: NetflixIntroOverlayProps) {
       {/* Vídeo Oficial de Transição Cinematográfica com explosão de néon */}
       <video
         ref={videoRef}
-        src="/branding/transition-netflix.mp4"
+        src={getAssetPath("/branding/transition-netflix.mp4")}
         autoPlay
         playsInline
         muted

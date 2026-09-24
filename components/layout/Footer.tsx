@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { Logo } from "../ui/Logo";
+import { getAssetPath } from "@/lib/utils/asset";
 
 export const Footer: React.FC = () => {
   return (
@@ -22,7 +23,7 @@ export const Footer: React.FC = () => {
                 title="Conheça a Milkfed Devs&&Reqs Lords - Sobre Nós"
               >
                 <img
-                  src="/branding/logo-milkfed.png"
+                  src={getAssetPath("/branding/logo-milkfed.png")}
                   alt="Milkfed Devs&&Reqs Lords"
                   className="w-4 h-4 object-contain opacity-85 group-hover:opacity-100 transition-opacity"
                 />

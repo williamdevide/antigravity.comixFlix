@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { X, Mail, Lock, User, Eye, EyeOff, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/lib/context/auth-context";
 import { getAuthErrorMessage } from "@/lib/firebase/auth";
+import { getAssetPath } from "@/lib/utils/asset";
 
 export function AuthModal() {
   const {
@@ -142,7 +143,7 @@ export function AuthModal() {
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl overflow-hidden border border-brand-primary/40 bg-black shrink-0 shadow-md">
               <img
-                src="/branding/logo.jpg"
+                src={getAssetPath("/branding/logo.jpg")}
                 alt="ComixFlix Logo"
                 className="w-full h-full object-cover"
               />

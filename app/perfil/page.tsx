@@ -31,6 +31,7 @@ import { useCollection } from "@/lib/context/collection-context";
 import { Badge } from "@/components/ui/Badge";
 import { CloudSyncIndicator } from "@/components/ui/CloudSyncIndicator";
 import { ShareProfileModal } from "@/components/profile/ShareProfileModal";
+import { getAssetPath } from "@/lib/utils/asset";
 
 const DEFAULT_AVATARS = [
   {
@@ -629,7 +630,7 @@ export default function PerfilPage() {
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-bg-elevated border border-border-default flex items-center justify-center p-1.5 shrink-0 shadow-sm group-hover:scale-105 transition-transform">
                   <img
-                    src="/branding/logo-milkfed.png"
+                    src={getAssetPath("/branding/logo-milkfed.png")}
                     alt="Milkfed Devs&&Reqs Lords"
                     className="w-full h-full object-contain"
                   />

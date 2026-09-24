@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/lib/context/auth-context";
 import { getAuthErrorMessage } from "@/lib/firebase/auth";
 import { playNetflixComicIntroSound } from "@/lib/utils/audio";
+import { getAssetPath } from "@/lib/utils/asset";
 
 export type ScreenState = "splash-initial" | "splash-transition" | "login" | "register" | "forgot";
 
@@ -244,7 +245,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
           {/* CAMADA BASE: Imagem Oficial splash.jpg em Tela Cheia */}
           <div className="absolute inset-0 z-0">
             <img
-              src="/branding/splash.jpg"
+              src={getAssetPath("/branding/splash.jpg")}
               alt="ComixFlix Splash Background"
               className="w-full h-full object-cover object-center transform scale-100"
             />
@@ -265,8 +266,8 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
             >
               <video
                 ref={introVideoRef}
-                src="/branding/cinematic_intro.mp4"
-                poster="/branding/splash.jpg"
+                src={getAssetPath("/branding/cinematic_intro.mp4")}
+                poster={getAssetPath("/branding/splash.jpg")}
                 autoPlay
                 playsInline
                 muted
@@ -373,7 +374,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
             {/* Imagem de Fundo em Tela Cheia */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
               <img
-                src="/branding/splash.jpg"
+                src={getAssetPath("/branding/splash.jpg")}
                 alt="ComixFlix HQ Neon"
                 className="w-full h-full object-cover object-center transform scale-105 animate-[pulse_6s_ease-in-out_infinite]"
               />
@@ -401,7 +402,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
               <div className="w-52 h-52 rounded-full bg-[#e50914]/20 blur-3xl absolute -z-10 animate-pulse"></div>
               <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-[#E50914] shadow-[0_0_30px_rgba(229,9,20,0.8)] bg-black relative mb-3">
                 <img
-                  src="/branding/logo.jpg"
+                  src={getAssetPath("/branding/logo.jpg")}
                   alt="ComixFlix Logo"
                   className="w-full h-full object-cover scale-105"
                 />
@@ -450,7 +451,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
                 >
                   <span className="text-[9px] text-[#7A7A7A]">Desenvolvido por</span>
                   <img
-                    src="/branding/logo-milkfed.png"
+                    src={getAssetPath("/branding/logo-milkfed.png")}
                     alt="Milkfed Devs&&Reqs Lords"
                     className="w-3.5 h-3.5 object-contain"
                   />
@@ -482,7 +483,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
                   <span className="material-symbols-outlined text-[24px]">arrow_back</span>
                 </button>
                 <div className="w-8 h-8 rounded-lg overflow-hidden border border-[#e50914]/40 bg-black shrink-0 shadow-sm">
-                  <img src="/branding/logo.jpg" alt="Logo" className="w-full h-full object-cover" />
+                  <img src={getAssetPath("/branding/logo.jpg")} alt="Logo" className="w-full h-full object-cover" />
                 </div>
                 <span className="font-black text-lg tracking-wider text-[#e50914]">
                   COMIX<span className="text-white">FLIX</span>
@@ -771,7 +772,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
                 >
                   <span className="text-[10px] text-[#707070]">Desenvolvido por</span>
                   <img
-                    src="/branding/logo-milkfed.png"
+                    src={getAssetPath("/branding/logo-milkfed.png")}
                     alt="Milkfed Devs&&Reqs Lords"
                     className="w-3.5 h-3.5 object-contain"
                   />
@@ -803,7 +804,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
                   <span className="material-symbols-outlined text-[24px]">arrow_back</span>
                 </button>
                 <div className="w-8 h-8 rounded-lg overflow-hidden border border-[#e50914]/40 bg-black shrink-0 shadow-sm">
-                  <img src="/branding/logo.jpg" alt="Logo" className="w-full h-full object-cover" />
+                  <img src={getAssetPath("/branding/logo.jpg")} alt="Logo" className="w-full h-full object-cover" />
                 </div>
                 <span className="font-black text-lg tracking-wider text-[#e50914]">
                   COMIX<span className="text-white">FLIX</span>
@@ -1107,7 +1108,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
                 >
                   <span className="text-[10px] text-[#707070]">Desenvolvido por</span>
                   <img
-                    src="/branding/logo-milkfed.png"
+                    src={getAssetPath("/branding/logo-milkfed.png")}
                     alt="Milkfed Devs&&Reqs Lords"
                     className="w-3.5 h-3.5 object-contain"
                   />
@@ -1139,7 +1140,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
                   <span className="material-symbols-outlined text-[24px]">arrow_back</span>
                 </button>
                 <div className="w-8 h-8 rounded-lg overflow-hidden border border-[#e50914]/40 bg-black shrink-0 shadow-sm">
-                  <img src="/branding/logo.jpg" alt="Logo" className="w-full h-full object-cover" />
+                  <img src={getAssetPath("/branding/logo.jpg")} alt="Logo" className="w-full h-full object-cover" />
                 </div>
                 <span className="font-black text-lg tracking-wider text-[#e50914]">
                   COMIX<span className="text-white">FLIX</span>
